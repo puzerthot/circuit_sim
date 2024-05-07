@@ -1289,7 +1289,7 @@ namespace circuit_sim
             }
         }
 
-        private pMatrix MatrixExclude(int rEx, int cEx)
+        public pMatrix MatrixExcludeRC(int rEx, int cEx)
         {
             var p = new pMatrix(this.rows - 1, this.colums - 1);
             int index = 0;

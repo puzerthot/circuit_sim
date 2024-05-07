@@ -19,22 +19,14 @@ namespace circuit_sim
 
         private void Work()
         {
-            //var tmp = new NetList("C:\\Users\\paulcheuk\\Desktop\\Playground\\circuit_sim\\circuit_sim\\bin\\Debug\\net1.txt");
-            //var config = new NetList.SimulationConfig();
-            //var c = tmp.Simulation(config);
 
-            var tmp = new NetList("C:\\Users\\paulcheuk\\Desktop\\Playground\\circuit_sim\\circuit_sim\\bin\\Debug\\net2.txt");
-            var config = new NetList.SimulationConfig();
-            config.SetTemperatureInDegree(27);
-            var c = tmp.Simulation(config);
-
-
-            //var dio = new NetList.DiodeBranch("D3");
+            //var tmp = new NetList("C:\\Users\\paulcheuk\\Desktop\\Playground\\circuit_sim\\circuit_sim\\bin\\Debug\\net2.txt");
             //var config = new NetList.SimulationConfig();
             //config.SetTemperatureInDegree(27);
-            //dio.PrepareFor(config);
-            //dio.SetValue("Eta:0.9999;Isat:1E-14;");
-            //dio.finalC = 12.025;
+            //var c = tmp.Simulation(config);
+
+
+
 
 
             //double r = 100;
@@ -48,12 +40,47 @@ namespace circuit_sim
 
             //Console.WriteLine($"final:{finalValue}, error:{errorFunc(finalValue)}, current:{dio.CurrentGivenVd(finalValue)}");
 
-            foreach(var item in c)
+            Test();
+            Test2();
+            PrintCurrent(2.62271297430672);
+        }
+        private void PrintCurrent(params double[] vds)
+        {
+            var dio = new NetList.DiodeBranch("D3");
+            var config = new NetList.SimulationConfig();
+            config.SetTemperatureInDegree(27);
+            dio.PrepareFor(config);
+            dio.SetValue("Eta:0.9999;Isat:1E-14;");
+            dio.finalC = 12.025;
+
+            foreach (var a in vds)
+            {
+                Console.WriteLine($"V:{a}, I:{dio.CurrentGivenVd(a)}");
+            }
+        }
+        private void Test()
+        {
+            Console.WriteLine("Test-----");
+            var tmp = new NetList("C:\\Users\\paulcheuk\\Desktop\\Playground\\circuit_sim\\circuit_sim\\bin\\Debug\\net1.txt");
+            var config = new NetList.SimulationConfig();
+            var c = tmp.Simulation(config);
+            foreach (var item in c)
             {
                 Console.WriteLine($"{item.Key}:{item.Value}");
             }
         }
-
+        private void Test2()
+        {
+            Console.WriteLine("Test 2-----");
+            var tmp = new NetList("C:\\Users\\paulcheuk\\Desktop\\Playground\\circuit_sim\\circuit_sim\\bin\\Debug\\net2.txt");
+            var config = new NetList.SimulationConfig();
+            config.SetTemperatureInDegree(27);
+            var c = tmp.Simulation(config);
+            foreach (var item in c)
+            {
+                Console.WriteLine($"{item.Key}:{item.Value}");
+            }
+        }
         public double NewtonMethod(double init, Func<double, double> error, Func<double, double> derivative, double eplison = 1e-9)
         {
             double ak = init;

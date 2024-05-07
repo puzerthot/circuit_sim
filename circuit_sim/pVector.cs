@@ -206,6 +206,20 @@ namespace circuit_sim
             }
         }
 
+        public pVector ExcludeAtIndex(int excludeIndex)
+        {
+            var value = pVector.NewWithLen(Size - 1);
+            int tj = 0;
+            for (int i = 0; i < Size; i++)
+            {
+                if (i != excludeIndex)
+                {
+                    value[tj++] = this[i];
+                }
+            }
+            return value;
+        }
+
         public static double Dot(double[] A, double[] B)
         {
             if (A.Length == B.Length)

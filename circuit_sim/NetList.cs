@@ -167,6 +167,96 @@ namespace circuit_sim
                 TemperatureInDegreeKelvin = 273.15 + degree;
             }
         }
+
+        public (pMatrix A, pVector J) Full(pVector Vi)
+        {
+            var Y = new pMatrix(NodeIDDict.Count);
+            var J = pVector.NewWithLen(NodeIDDict.Count);
+            foreach (var b in Branches)
+            {
+                //ref: circuit and system simulation methods.pdf,  page 19, 
+                var i = NodeIDDict[b.FromNode].Index;
+                var j = NodeIDDict[b.ToNode].Index;
+                if (b.BranchType == Branch.BranchTypeEnum.Resistor)
+                {
+                    var conductance = 1 / b.Value;
+                    Y[i, i] += conductance;
+                    Y[i, j] -= conductance;
+                    Y[j, i] -= conductance;
+                    Y[j, j] += conductance;
+                }
+                else if (b.BranchType == Branch.BranchTypeEnum.Current)
+                {
+                    J[i] -= b.Value;
+                    J[j] += b.Value;
+                }
+                else if (b.IsNonlinear)
+                {
+                    var (Ieq, Geq) = b.LinearizedModel(Vi[i] - Vi[j]);
+                    if (Ieq != 0.0)
+                    {
+                        J[i] -= Ieq;
+                        J[j] += Ieq;
+                    }
+
+                    if (Geq != 0.0)
+                    {
+                        Y[i, i] += Geq;
+                        Y[i, j] -= Geq;
+                        Y[j, i] -= Geq;
+                        Y[j, j] += Geq;
+                    }
+                }
+            }
+            return (Y, J);
+        }
+
+        public (pMatrix A, pVector J) Partial(pVector Vi, int excludedIndex)
+        {
+            //to definiate admitance, ref: circuit and system simulation methods.pdf,  page 21
+            var Y = new pMatrix(NodeIDDict.Count);
+            var J = pVector.NewWithLen(NodeIDDict.Count);
+            foreach (var b in Branches)
+            {
+                //ref: circuit and system simulation methods.pdf,  page 19, 
+                var i = NodeIDDict[b.FromNode].Index;
+                var j = NodeIDDict[b.ToNode].Index;
+                if (b.BranchType == Branch.BranchTypeEnum.Resistor)
+                {
+                    var conductance = 1 / b.Value;
+                    Y[i, i] += conductance;
+                    Y[i, j] -= conductance;
+                    Y[j, i] -= conductance;
+                    Y[j, j] += conductance;
+                }
+                else if (b.BranchType == Branch.BranchTypeEnum.Current)
+                {
+                    J[i] -= b.Value;
+                    J[j] += b.Value;
+                }
+                else if (b.IsNonlinear)
+                {
+                    var (Ieq, Geq) = b.LinearizedModel(Vi[i] - Vi[j]);
+                    if (Ieq != 0.0)
+                    {
+                        J[i] -= Ieq;
+                        J[j] += Ieq;
+                    }
+
+                    if (Geq != 0.0)
+                    {
+                        Y[i, i] += Geq;
+                        Y[i, j] -= Geq;
+                        Y[j, i] -= Geq;
+                        Y[j, j] += Geq;
+                    }
+                }
+            }
+            var rY = Y.MatrixExcludeRC(excludedIndex, excludedIndex);
+            var rJ = J.ExcludeAtIndex(excludedIndex);
+
+            return (rY, rJ);
+        }
         public Dictionary<int, double> Simulation(SimulationConfig config)
         {
             foreach (var b in Branches)
@@ -180,70 +270,10 @@ namespace circuit_sim
             var random = new Random(0);
             do
             {
-                var Y = new pMatrix(NodeIDDict.Count);
-                var J = pVector.NewWithLen(NodeIDDict.Count);
-                foreach (var b in Branches)
-                {
-                    //ref: circuit and system simulation methods.pdf,  page 19, 
-                    var i = NodeIDDict[b.FromNode].Index;
-                    var j = NodeIDDict[b.ToNode].Index;
-                    if (b.BranchType == Branch.BranchTypeEnum.Resistor)
-                    {
-                        var conductance = 1 / b.Value;
-                        Y[i, i] += conductance;
-                        Y[i, j] -= conductance;
-                        Y[j, i] -= conductance;
-                        Y[j, j] += conductance;
-                    }
-                    else if (b.BranchType == Branch.BranchTypeEnum.Current)
-                    {
-                        J[i] -= b.Value;
-                        J[j] += b.Value;
-                    }
-                    else if (b.IsNonlinear)
-                    {
-                        var (Ieq, Geq) = b.LinearizedModel(Vi[i] - Vi[j]);
-                        if (Ieq != 0.0)
-                        {
-                            J[i] -= Ieq;
-                            J[j] += Ieq;
-                        }
-
-                        if (Geq != 0.0)
-                        {
-                            Y[i, i] += Geq;
-                            Y[i, j] -= Geq;
-                            Y[j, i] -= Geq;
-                            Y[j, j] += Geq;
-                        }
-                    }
-                }
-
-                //to definiate admitance, ref: circuit and system simulation methods.pdf,  page 21
-                var rY = new pMatrix(Y.Rows - 1, Y.Columns - 1);
-                foreach (var (r, c) in Y.Indexes())
-                {
-                    if (r != selectGroudNodeIndex && c != selectGroudNodeIndex)
-                    {
-                        var tr = r > selectGroudNodeIndex ? r - 1 : r;
-                        var tc = c > selectGroudNodeIndex ? c - 1 : c;
-                        rY[tr, tc] = Y[r, c];
-                    }
-                }
-
-                var rJ = pVector.NewWithLen(J.Size - 1);
-                for (int i = 0; i < J.Size; i++)
-                {
-                    var tj = i > selectGroudNodeIndex ? i - 1 : i;
-                    if (i != selectGroudNodeIndex)
-                    {
-                        rJ[tj] = J[i];
-                    }
-                }
-
+                var (rY, rJ) = Partial(Vi, selectGroudNodeIndex);
                 var rV = pMatrix.SolveViaLUDecomposition(rY, rJ);
                 double totalDiff = 0.0;
-                for (int i = 0; i < J.Size; i++)
+                for (int i = 0; i < Vi.Size; i++)
                 {
                     if (i == selectGroudNodeIndex)
                     {
