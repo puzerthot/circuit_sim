@@ -7,3 +7,5 @@
 /circuit_sim/.vs
 /circuit_sim/obj
 /circuit_sim/obj/Debug
+/circuit_sim/obj/Debug/circuit_sim.csproj.AssemblyReference.cache
+/circuit_sim/obj/Debug/DesignTimeResolveAssemblyReferencesInput.cache
