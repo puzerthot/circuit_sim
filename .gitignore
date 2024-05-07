@@ -3,3 +3,7 @@
 ################################################################################
 
 /.vs/circuit_sim
+/circuit_sim/bin/Debug
+/circuit_sim/.vs
+/circuit_sim/obj
+/circuit_sim/obj/Debug
