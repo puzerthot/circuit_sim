@@ -18,9 +18,14 @@ namespace circuit_sim
 
         private void Work()
         {
-            var tmp = new NetList("C:\\Users\\paulcheuk\\Desktop\\Playground\\circuit_sim\\circuit_sim\\bin\\Debug\\text.txt");
+            var tmp = new NetList("C:\\Users\\paulcheuk\\Desktop\\Playground\\circuit_sim\\circuit_sim\\bin\\Debug\\net1.txt");
+            var config = new NetList.SimulationConfig();
+            var c = tmp.Simulation(config);
 
-            var c = tmp.CaculateNodeVolatage();
+            //var tmp = new NetList("C:\\Users\\paulcheuk\\Desktop\\Playground\\circuit_sim\\circuit_sim\\bin\\Debug\\net2.txt");
+            //var config = new NetList.SimulationConfig();
+            //config.SetTemperatureInDegree(27);
+            //var c = tmp.Simulation(config);
         }
 
     }

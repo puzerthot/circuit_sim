@@ -1,42 +1,72 @@
-﻿using pLib;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.IO;
 using System.Linq;
 
+
 namespace circuit_sim
 {
     class NetList
     {
+        class DiodeBranch : Branch
+        {
+            public const double q = 1.60217663e-19;// charge on an electron: 1.60217663 × 10-19 coulombs
+            public const double k = 1.380649e-23; //Boltzman's constant: 1.380649 × 10-23 m2 kg s-2 K-1
+            public double T; //absolute temperature in degree Kelvin
+            public double Eta; //non-ideality factor
+            public double Isat; //reverse saturation current;
+            public DiodeBranch(string id) : base(id)
+            {
+            }
+            public double CurrentGivenVd(double vd)
+            {
+                // ref: circuit and system simulation methods.pdf, page 24
+                var current = Isat * (Math.Exp(q * vd / (Eta * k * T)) - 1);
+                return current;
+            }
+            public override void SetValue(string valueString)
+            {
+                base.SetValue(valueString);
+            }
+        }
         class Branch
         {
-            public enum BranchTypeEnum { Current, Resistor, Voltage }
+            public Branch(string id)
+            {
+                ID = id;
+            }
+            public enum BranchTypeEnum { Current, Resistor, Voltage, Diode }
             public BranchTypeEnum BranchType;
-            public string ID;
+            public string ID { get; private set; }
             public int FromNode;
             public int ToNode;
             public double Value;
+            public virtual void SetValue(string valueString)
+            {
+                Value = double.Parse(valueString);
+            }
+
+            public static Branch NewBranchOf(string nodeId)
+            {
+                switch (nodeId[0].ToString().ToUpper())
+                {
+                    case "I": return new Branch(nodeId) { BranchType = BranchTypeEnum.Current };
+                    case "R": return new Branch(nodeId) { BranchType = BranchTypeEnum.Resistor };
+                    case "V": return new Branch(nodeId) { BranchType = BranchTypeEnum.Voltage };
+                    case "D": return new DiodeBranch(nodeId) { BranchType = BranchTypeEnum.Diode };
+                    default:
+                        throw new NotSupportedException("Not Support Node:" + nodeId);
+
+                }
+            }
             public static Branch FromLine(string[] headers, string line)
             {
                 var values = line.Split(new string[] { "," }, StringSplitOptions.None);
-                var branch = new Branch();
-                branch.ID = values[0];
+                var branch = NewBranchOf(values[0]);
                 branch.FromNode = int.Parse(values[1]);
                 branch.ToNode = int.Parse(values[2]);
-                branch.Value = double.Parse(values[3]);
-                if (branch.ID.StartsWith("I", StringComparison.OrdinalIgnoreCase))
-                {
-                    branch.BranchType = BranchTypeEnum.Current;
-                }
-                else if (branch.ID.StartsWith("R", StringComparison.OrdinalIgnoreCase))
-                {
-                    branch.BranchType = BranchTypeEnum.Resistor;
-                }
-                else if (branch.ID.StartsWith("V", StringComparison.OrdinalIgnoreCase))
-                {
-                    branch.BranchType = BranchTypeEnum.Resistor;
-                }
+                branch.SetValue(values[3]);
                 return branch;
             }
 
@@ -75,11 +105,18 @@ namespace circuit_sim
                 BindNodeAndBranch(branch.ToNode);
             }
         }
-
-        public Dictionary<int, double> CaculateNodeVolatage()
+        public class SimulationConfig
         {
-            var Y = new pLib.pMatrix(NodeIDDict.Count);
-            var J = pLib.pVector.NewWithLen(NodeIDDict.Count);
+            public double TemperatureInDegreeKelvin;
+            public void SetTemperatureInDegree(double degree)
+            {
+                TemperatureInDegreeKelvin = 273.15 + degree;
+            }
+        }
+        public Dictionary<int, double> Simulation(SimulationConfig config)
+        {
+            var Y = new pMatrix(NodeIDDict.Count);
+            var J = pVector.NewWithLen(NodeIDDict.Count);
             foreach (var b in Branches)
             {
                 //ref: circuit and system simulation methods.pdf,  page 19, 

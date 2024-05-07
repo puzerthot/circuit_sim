@@ -33,9 +33,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="pLib">
-      <HintPath>..\..\..\OldPC\Desktop\playground\happy\pdata\pLib\bin\Debug\pLib.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -56,8 +53,11 @@
       <DependentUpon>Form1.cs</DependentUpon>
     </Compile>
     <Compile Include="NetList.cs" />
+    <Compile Include="pMatrix.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="pUtils.cs" />
+    <Compile Include="pVector.cs" />
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
